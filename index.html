@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quadratische Funktionen Interaktiv</title>
+    
+    <!-- MathJax NUR noch für den Titel oder Logos, falls nötig. 
+         Hier deaktiviert für den Fließtext, damit nichts "riesig" wird. -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' },
+            options: {
+                ignoreHtmlClass: 'no-mathjax',
+                processHtmlClass: 'mathjax-process'
+            }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
+
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --error: #c0392b;
+            --bg: #fdfdfd;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0;
+            background-color: var(--bg);
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white; padding: 2rem; text-align: center;
+        }
+
+        section { padding: 2rem 5%; border-bottom: 1px solid #eee; }
+        
+        h2 { border-left: 5px solid var(--accent); padding-left: 15px; color: var(--primary); }
+        .instruction { margin-bottom: 2rem; max-width: 800px; color: #555; line-height: 1.5; }
+
+        .content-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start;
+        }
+        @media (max-width: 1000px) { .content-grid { grid-template-columns: 1fr; } }
+
+        /* SVG & Graphik */
+        .svg-wrapper {
+            background: white; border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); padding: 10px;
+            text-align: center; position: sticky; top: 20px;
+            cursor: default;
+        }
+        .svg-wrapper.interactive {
+            cursor: crosshair;
+            box-shadow: 0 0 0 3px var(--accent);
+        }
+        svg { width: 100%; height: auto; max-width: 600px; touch-action: none; }
+
+        /* Eingabezeilen */
+        .function-row {
+            background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc;
+        }
+        .function-row.active-drawing {
+            background-color: #e8f6fd; border-color: var(--accent) !important;
+        }
+
+        /* Mathe-Styling OHNE MathJax für Inputs & Text */
+        .math-style {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.15rem;
+        }
+        .math-var { font-style: italic; }
+        
+        /* Layout für die Formelzeile */
+        .math-line {
+            display: flex; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            gap: 3px; /* Enger Abstand für mathematischen Look */
+            margin-bottom: 10px; 
+        }
+        
+        /* Inputs Styling */
+        input[type="number"] {
+            width: 50px; 
+            padding: 4px; 
+            border: 1px solid #bbb;
+            border-radius: 4px; 
+            text-align: center; 
+            font-size: 1rem;
+            font-family: 'Segoe UI', sans-serif; 
+            outline: none;
+            margin: 0 2px;
+        }
+        
+        input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        
+        input.correct { background-color: #d4edda; border-color: var(--success); color: var(--success); font-weight: bold; }
+        input.wrong { background-color: #f8d7da; border-color: var(--error); color: var(--error); }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;
+            font-weight: 600; font-size: 0.9rem; transition: all 0.2s; margin-top: 5px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .btn-check { background-color: var(--primary); color: white; }
+        .btn-check:hover { background-color: #1a252f; }
+        .btn-draw { background-color: var(--accent); color: white; display: none; margin-left: 10px; }
+        .btn-draw:hover { background-color: #2980b9; }
+
+        /* Feedback Elemente */
+        .status-msg { font-family: 'Segoe UI', sans-serif; font-size: 1.2rem; margin-left: 10px; }
+        
+        /* SVG Elemente */
+        .grid-line { stroke: #ecf0f1; stroke-width: 1; }
+        .grid-line-major { stroke: #bdc3c7; stroke-width: 1.5; }
+        .axis { stroke: #2c3e50; stroke-width: 2; }
+        .tick-text { fill: #7f8c8d; font-size: 10px; font-family: sans-serif; }
+        .user-point { fill: var(--accent); stroke: white; stroke-width: 2; }
+        .plot-label { font-size: 18px; font-family: sans-serif; font-weight: bold; }
+
+        .row-label {
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Quadratische Funktionen</h1>
+        <p>Interaktives Arbeitsblatt: Klasse 9</p>
+    </header>
+
+    <!-- AUFGABE 1 -->
+    <section>
+        <h2>Aufgabe 1: Funktionsgleichungen ablesen</h2>
+        
+        <!-- HIER GEÄNDERT: Reines HTML statt MathJax, damit es nicht riesig wird -->
+        <p class="instruction">
+            Lies die Scheitelpunktform aus der Grafik ab. Die Form lautet:<br>
+            <span class="math-style">
+                <span class="math-var">f</span>(<span class="math-var">x</span>) = 
+                <span class="math-var">a</span>(<span class="math-var">x</span> + <span class="math-var">d</span>)² + <span class="math-var">e</span>
+            </span><br>
+            Forme sie anschließend in die Normalform um.
+        </p>
+
+        <div class="content-grid">
+            <div class="svg-wrapper">
+                <svg id="coordSystem1" viewBox="-250 -225 500 450"></svg>
+            </div>
+            
+            <div id="inputs-task1">
+                <!-- JS generiert Inhalt -->
+            </div>
+        </div>
+        <div style="text-align: right; margin-top: 10px;">
+            <button class="btn btn-check" onclick="checkTask1()">Alle Ergebnisse prüfen</button>
+        </div>
+    </section>
+
+    <!-- AUFGABE 2 -->
+    <section style="background-color: #f9f9f9;">
+        <h2>Aufgabe 2: Umformen und Zeichnen</h2>
+        <p class="instruction">
+            1. Forme durch quadratische Ergänzung um. <br>
+            2. Klicke auf <strong>"Prüfen"</strong>. Wenn korrekt, erscheint der Button <strong>"3 Punkte setzen"</strong>.<br>
+            3. Klicke dann 3 Punkte im Koordinatensystem an, die auf der Parabel liegen.
+        </p>
+
+        <div class="content-grid">
+            <div id="inputs-task2">
+                <!-- JS generiert Inhalt -->
+            </div>
+
+            <div class="svg-wrapper" id="svg-wrapper-2">
+                <svg id="coordSystem2" viewBox="-250 -225 500 450" onclick="handleSvgClick(event)"></svg>
+                <div id="drawing-feedback" style="margin-top:10px; font-style: italic; color: #666; height: 1.2em;">
+                    Wähle eine Aufgabe zum Zeichnen...
+                </div>
+            </div>
+        </div>
+    </section>
+
+<script>
+    // --- DATEN ---
+    const task1Data = [
+        { id: 1, a: 1,    d: -2, e: 1,  b: -4, c: 5,   color: "#2980b9" }, 
+        { id: 2, a: -0.5, d: 3,  e: 4,  b: -3, c: -0.5, color: "#c0392b" }, 
+        { id: 3, a: -2,   d: -1, e: -1, b: 4,  c: -3,  color: "#27ae60" }, 
+        { id: 4, a: 0.5,  d: 2,  e: -3, b: 2,  c: -1,  color: "#e67e22" }, 
+        { id: 5, a: -1,   d: -4, e: 2,  b: 8,  c: -14, color: "#8e44ad" }  
+    ];
+
+    const task2Data = [
+        { id: 1, funcStr: "x² + 4x",              a: 1,    d: 2,  e: -4, xs: -2, ys: -4, color: "#2980b9" },
+        { id: 2, funcStr: "-x² + 6x - 7",         a: -1,   d: -3, e: 2,  xs: 3,  ys: 2,  color: "#c0392b" },
+        { id: 3, funcStr: "2x² + 4x - 3",         a: 2,    d: 1,  e: -5, xs: -1, ys: -5, color: "#27ae60" },
+        { id: 4, funcStr: "-0.5x² + 2x + 1",      a: -0.5, d: -2, e: 3,  xs: 2,  ys: 3,  color: "#e67e22" },
+        { id: 5, funcStr: "0.5x² + 4x + 9",       a: 0.5,  d: 4,  e: 1,  xs: -4, ys: 1,  color: "#8e44ad" } 
+    ];
+
+    let drawingState = { activeTaskIndex: -1, points: [], isComplete: [] };
+
+    // --- INIT ---
+    function init() {
+        createGrid('coordSystem1', true);
+        createGrid('coordSystem2', false);
+        generateInputsTask1();
+        generateInputsTask2();
+    }
+
+    // --- SVG SYSTEM ---
+    function createGrid(svgId, drawPlots) {
+        const svg = document.getElementById(svgId);
+        const scale = 25; 
+        let content = "";
+        
+        for (let x = -9; x <= 9; x++) {
+            if (x === 0) continue;
+            let cls = x % 1 === 0 ? "grid-line-major" : "grid-line";
+            content += `<line x1="${x*scale}" y1="-225" x2="${x*scale}" y2="225" class="${cls}" />`;
+            if (Math.abs(x) <= 8) content += `<text x="${x*scale - 3}" y="15" class="tick-text">${x}</text>`;
+        }
+        for (let y = -8; y <= 8; y++) {
+            if (y === 0) continue;
+            let cls = y % 1 === 0 ? "grid-line-major" : "grid-line";
+            content += `<line x1="-250" y1="${-y*scale}" x2="250" y2="${-y*scale}" class="${cls}" />`;
+            if (Math.abs(y) <= 7) content += `<text x="5" y="${-y*scale + 3}" class="tick-text">${y}</text>`;
+        }
+
+        content += `<line x1="-250" y1="0" x2="250" y2="0" class="axis" />`;
+        content += `<line x1="0" y1="-225" x2="0" y2="225" class="axis" />`;
+        content += `<g id="${svgId}-plots"></g>`; 
+        content += `<g id="${svgId}-points"></g>`; 
+
+        svg.innerHTML = content;
+
+        if (drawPlots) {
+            const group = document.getElementById(`${svgId}-plots`);
+            task1Data.forEach(f => plotParabola(group, f.a, -f.d, f.e, f.color, `f${f.id}`));
+        }
+    }
+
+    function plotParabola(group, a, xs, ys, color, label) {
+        const scale = 25;
+        let dString = "";
+        for (let x = -10; x <= 10; x += 0.1) {
+            let y = a * Math.pow((x - xs), 2) + ys;
+            let svgX = x * scale;
+            let svgY = -y * scale;
+            if (x === -10) dString += `M ${svgX} ${svgY} `;
+            else dString += `L ${svgX} ${svgY} `;
+        }
+        
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", dString);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", color);
+        path.setAttribute("stroke-width", "3");
+        group.appendChild(path);
+        
+        if (label) {
+            let lx = xs + 2; 
+            if(lx > 7) lx = xs - 2; 
+            let ly = a * Math.pow((lx-xs),2) + ys;
+            if (ly > 8) ly = 8;
+            if (ly < -8) ly = -8;
+
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", lx*scale); text.setAttribute("y", -ly*scale);
+            text.setAttribute("fill", color); text.setAttribute("class", "plot-label"); 
+            text.textContent = label; 
+            group.appendChild(text);
+        }
+    }
+
+    // --- HTML GENERATOR ---
+    
+    // HIER GEÄNDERT: Verwendung von echtem "²" Zeichen statt <sup>2</sup>
+    function getMathHTML_SForm(idx, prefix) {
+        return `
+        <div class="math-line math-style">
+            <span style="font-size:0.9rem; font-family:'Segoe UI',sans-serif; margin-right:5px">S-Form:</span>
+            <span class="math-var">${prefix}</span>(<span class="math-var">x</span>) =
+            <input type="number" id="${idx}-a" placeholder="a">
+            (<span class="math-var">x</span> +
+            <input type="number" id="${idx}-d" placeholder="d">)² +
+            <input type="number" id="${idx}-e" placeholder="e">
+        </div>`;
+    }
+
+    function getMathHTML_Normal(idx, prefix) {
+        return `
+        <div class="math-line math-style">
+            <span style="font-size:0.9rem; font-family:'Segoe UI',sans-serif; margin-right:5px">Normal:</span>
+            <span class="math-var">${prefix}</span>(<span class="math-var">x</span>) =
+            <input type="number" id="${idx}-na" placeholder="a">
+            <span class="math-var">x</span>² +
+            <input type="number" id="${idx}-nb" placeholder="b">
+            <span class="math-var">x</span> +
+            <input type="number" id="${idx}-nc" placeholder="c">
+            <span id="res-${idx}" class="status-msg"></span>
+        </div>`;
+    }
+
+    function generateInputsTask1() {
+        const container = document.getElementById('inputs-task1');
+        task1Data.forEach((f, i) => {
+            const div = document.createElement('div');
+            div.className = 'function-row';
+            div.style.borderLeftColor = f.color;
+            const prefix = "f";
+            div.innerHTML = `
+                <div class="row-label" style="color:${f.color};">Funktion f<sub>${f.id}</sub></div>
+                ${getMathHTML_SForm(`t1-${i}`, prefix)}
+                ${getMathHTML_Normal(`t1-${i}`, prefix)}
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function generateInputsTask2() {
+        const container = document.getElementById('inputs-task2');
+        task2Data.forEach((g, i) => {
+            const div = document.createElement('div');
+            div.className = 'function-row';
+            div.id = `row-t2-${i}`;
+            div.style.borderLeftColor = g.color;
+
+            div.innerHTML = `
+                <div class="row-label" style="color:${g.color}; display:flex; justify-content:space-between;">
+                    <span>Funktion g<sub>${g.id}</sub>(x) = ${g.funcStr}</span>
+                </div>
+                
+                <div class="math-line math-style">
+                    <span style="font-size:0.9rem; font-family:'Segoe UI',sans-serif; margin-right:5px">S-Form:</span>
+                    = <input type="number" id="t2-a-${i}" placeholder="a">
+                    (<span class="math-var">x</span> +
+                    <input type="number" id="t2-d-${i}" placeholder="d">)² +
+                    <input type="number" id="t2-e-${i}" placeholder="e">
+                </div>
+                
+                <div class="math-line math-style">
+                    <span class="math-var">S</span>(
+                    <input type="number" id="t2-xs-${i}" placeholder="x"> |
+                    <input type="number" id="t2-ys-${i}" placeholder="y"> )
+                </div>
+
+                <div style="margin-top:10px;">
+                    <button class="btn btn-check" onclick="checkRowTask2(${i})">Prüfen</button>
+                    <button class="btn btn-draw" id="btn-draw-${i}" onclick="startDrawing(${i})">3 Punkte setzen</button>
+                    <span id="res-t2-${i}" class="status-msg"></span>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // --- CHECK LOGIC ---
+    function checkValue(id, correct) {
+        const el = document.getElementById(id);
+        const val = parseFloat(el.value.replace(',','.'));
+        if (isNaN(val)) return false;
+        const ok = Math.abs(val - correct) < 0.001;
+        el.className = ok ? "correct" : "wrong";
+        return ok;
+    }
+
+    function checkTask1() {
+        task1Data.forEach((f, i) => {
+            const r1 = checkValue(`t1-${i}-a`, f.a);
+            const r2 = checkValue(`t1-${i}-d`, f.d);
+            const r3 = checkValue(`t1-${i}-e`, f.e);
+            const r4 = checkValue(`t1-${i}-na`, f.a);
+            const r5 = checkValue(`t1-${i}-nb`, f.b);
+            const r6 = checkValue(`t1-${i}-nc`, f.c);
+            
+            const msg = document.getElementById(`res-t1-${i}`);
+            if(r1&&r2&&r3&&r4&&r5&&r6) { msg.innerHTML = "✅"; msg.className="status-msg msg-success"; }
+            else { msg.innerHTML = "❌"; msg.className="status-msg msg-error"; }
+        });
+    }
+
+    function checkRowTask2(i) {
+        const g = task2Data[i];
+        const r1 = checkValue(`t2-a-${i}`, g.a);
+        const r2 = checkValue(`t2-d-${i}`, g.d);
+        const r3 = checkValue(`t2-e-${i}`, g.e);
+        const r4 = checkValue(`t2-xs-${i}`, g.xs);
+        const r5 = checkValue(`t2-ys-${i}`, g.ys);
+
+        const msg = document.getElementById(`res-t2-${i}`);
+        const btnDraw = document.getElementById(`btn-draw-${i}`);
+
+        if(r1 && r2 && r3 && r4 && r5) {
+            msg.innerHTML = "✅ Richtig";
+            msg.className = "status-msg msg-success";
+            if(!drawingState.isComplete[i]) {
+                btnDraw.style.display = "inline-block";
+                btnDraw.focus();
+            }
+        } else {
+            msg.innerHTML = "❌ Fehler";
+            msg.className = "status-msg msg-error";
+            btnDraw.style.display = "none";
+        }
+    }
+
+    // --- DRAWING LOGIC ---
+    function startDrawing(index) {
+        drawingState.activeTaskIndex = index;
+        drawingState.points = [];
+        
+        document.querySelectorAll('.function-row').forEach(r => r.classList.remove('active-drawing'));
+        document.getElementById(`row-t2-${index}`).classList.add('active-drawing');
+        document.getElementById('svg-wrapper-2').classList.add('interactive');
+        
+        const gId = task2Data[index].id;
+        document.getElementById('drawing-feedback').innerHTML = 
+            `Markiere <span style="font-weight:bold; color:${task2Data[index].color}">3 Punkte</span> für g<sub>${gId}</sub>. (0/3)`;
+        document.getElementById('coordSystem2-points').innerHTML = '';
+    }
+
+    function handleSvgClick(evt) {
+        if (drawingState.activeTaskIndex === -1) return;
+
+        const svg = document.getElementById('coordSystem2');
+        const rect = svg.getBoundingClientRect();
+        
+        const xPixel = evt.clientX - rect.left;
+        const yPixel = evt.clientY - rect.top;
+
+        const viewBoxWidth = 500;
+        const viewBoxHeight = 450;
+        
+        const svgX = (xPixel / rect.width) * viewBoxWidth - 250;
+        const svgY = (yPixel / rect.height) * viewBoxHeight - 225;
+
+        let mathX = svgX / 25;
+        let mathY = -(svgY / 25); 
+
+        // Snap to Grid (0.5)
+        mathX = Math.round(mathX * 2) / 2;
+        mathY = Math.round(mathY * 2) / 2;
+
+        addPointToSvg(mathX, mathY);
+        drawingState.points.push({x: mathX, y: mathY});
+        
+        const currentCount = drawingState.points.length;
+        const gId = task2Data[drawingState.activeTaskIndex].id;
+        document.getElementById('drawing-feedback').innerHTML = 
+            `Punkte für g<sub>${gId}</sub>: (${currentCount}/3)`;
+
+        if (currentCount === 3) {
+            validateDrawing();
+        }
+    }
+
+    function addPointToSvg(mx, my) {
+        const group = document.getElementById('coordSystem2-points');
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        const scale = 25;
+        circle.setAttribute("cx", mx * scale);
+        circle.setAttribute("cy", -my * scale);
+        circle.setAttribute("r", 4);
+        circle.setAttribute("class", "user-point");
+        group.appendChild(circle);
+    }
+
+    function validateDrawing() {
+        const idx = drawingState.activeTaskIndex;
+        const g = task2Data[idx];
+        const points = drawingState.points;
+        const feedback = document.getElementById('drawing-feedback');
+
+        let allValid = true;
+        points.forEach(p => {
+            const expectedY = g.a * Math.pow((p.x - g.xs), 2) + g.ys;
+            if (Math.abs(p.y - expectedY) > 0.1) {
+                allValid = false;
+            }
+        });
+
+        if (allValid) {
+            feedback.innerHTML = `<span style="color:green; font-weight:bold">Richtig! Parabel wird gezeichnet.</span>`;
+            const plotGroup = document.getElementById('coordSystem2-plots');
+            plotParabola(plotGroup, g.a, g.xs, g.ys, g.color, `g${g.id}`);
+            document.getElementById('coordSystem2-points').innerHTML = '';
+            
+            drawingState.isComplete[idx] = true;
+            document.getElementById(`btn-draw-${idx}`).style.display = 'none';
+            document.getElementById(`res-t2-${idx}`).innerHTML += " & gezeichnet!";
+            
+            drawingState.activeTaskIndex = -1;
+            document.getElementById('svg-wrapper-2').classList.remove('interactive');
+            document.querySelectorAll('.function-row').forEach(r => r.classList.remove('active-drawing'));
+        } else {
+            feedback.innerHTML = `<span style="color:red; font-weight:bold">Falsch. Versuch es nochmal!</span>`;
+            setTimeout(() => {
+                 document.getElementById('coordSystem2-points').innerHTML = '';
+                 drawingState.points = [];
+                 const gId = task2Data[idx].id;
+                 feedback.innerHTML = `Punkte für g<sub>${gId}</sub>: (0/3)`;
+            }, 1500);
+        }
+    }
+
+    window.onload = init;
+
+</script>
+<!-- rechtliches --><style>.erik-recht{font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;text-align:center;padding:18px 12px 22px;opacity:.75}.erik-recht a{color:inherit}@media print{.erik-recht{display:none}}</style><footer class="erik-recht"><a href="https://erikdahlmann.github.io/impressum.html">Impressum</a> · <a href="https://erikdahlmann.github.io/datenschutz.html">Datenschutz</a></footer><!-- /rechtliches --></body>
+</html>
